@@ -1,0 +1,5 @@
+[
+  { "id": 1, "employeeId": "E001", "projectId": "P100", "hours": 8, "date": "2023-10-01" },
+  { "id": 2, "employeeId": "E001", "projectId": "P200", "hours": 4, "date": "2023-10-02" },
+  { "id": 3, "employeeId": "E002", "projectId": "P100", "hours": 8, "date": "2023-10-01" }
+]

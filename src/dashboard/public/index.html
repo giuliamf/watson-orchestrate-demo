@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Watson Orchestrate Mock - Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #f4f4f9; }
+        .card { box-shadow: 0 4px 6px rgba(0,0,0,0.1); border: none; }
+        .btn-ibm { background-color: #0f62fe; color: white; }
+        .btn-ibm:hover { background-color: #0353e9; color: white; }
+    </style>
+</head>
+<body>
+    <div class="container mt-5">
+        <div class="row mb-4">
+            <div class="col text-center">
+                <h1>🤖 Watson Orchestrate (Mock)</h1>
+                <p class="text-muted">Demonstração de Sincronização: Certponto ↔ Clarizen</p>
+            </div>
+        </div>
+
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="card p-4">
+                    <h4 class="mb-3">Painel de Controle</h4>
+                    <p>Clique no botão abaixo para iniciar a skill de sincronização de horas.</p>
+                    
+                    <button id="btnRun" class="btn btn-ibm w-100 py-2" onclick="runWorkflow()">
+                        Executar Workflow de Sincronização
+                    </button>
+
+                    <div id="loading" class="text-center mt-3 d-none">
+                        <div class="spinner-border text-primary" role="status"></div>
+                        <p>Processando dados...</p>
+                    </div>
+                </div>
+
+                <div id="resultsArea" class="card p-4 mt-4 d-none">
+                    <h4 class="mb-3">📊 Resultados da Execução</h4>
+                    <table class="table table-striped table-hover">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Projeto ID</th>
+                                <th>Nome do Projeto</th>
+                                <th>Horas Totais</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableBody">
+                            </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function runWorkflow() {
+            const btn = document.getElementById('btnRun');
+            const loading = document.getElementById('loading');
+            const resultsArea = document.getElementById('resultsArea');
+            const tableBody = document.getElementById('tableBody');
+
+            // UI Feedback
+            btn.disabled = true;
+            loading.classList.remove('d-none');
+            resultsArea.classList.add('d-none');
+            tableBody.innerHTML = '';
+
+            try {
+                // Chama nosso servidor
+                const response = await fetch('/api/run-workflow');
+                const result = await response.json();
+
+                // Simula um pequeno delay para "efeito dramático" da automação
+                setTimeout(() => {
+                    if (result.success) {
+                        result.data.forEach(item => {
+                            const row = `<tr>
+                                <td>${item.projectId}</td>
+                                <td>${item.projectName}</td>
+                                <td><strong>${item.totalHours}h</strong></td>
+                                <td><span class="badge bg-success">${item.status}</span></td>
+                            </tr>`;
+                            tableBody.innerHTML += row;
+                        });
+                        resultsArea.classList.remove('d-none');
+                    } else {
+                        alert('Erro ao rodar workflow: ' + result.error);
+                    }
+                    
+                    btn.disabled = false;
+                    loading.classList.add('d-none');
+                }, 1500);
+
+            } catch (err) {
+                console.error(err);
+                alert('Erro de conexão com o servidor.');
+                btn.disabled = false;
+                loading.classList.add('d-none');
+            }
+        }
+    </script>
+</body>
+</html>

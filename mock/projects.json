@@ -1,0 +1,4 @@
+[
+  { "id": "P100", "name": "Migração Cloud", "budget": 50000 },
+  { "id": "P200", "name": "App Mobile", "budget": 30000 }
+]
