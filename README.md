@@ -53,4 +53,10 @@ watson-orchestrate-demo/
 ├── package.json
 └── README.md
 
+ ```code
+  node demo.js
  ```
+
+ ```code
+  node src/dashboard/mock-server.js
+  ```
