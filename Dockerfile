@@ -1,5 +1,5 @@
 # ETAPA 1: Imagem base leve com Go
-FROM golang:1.25-alpine
+FROM golang:1.24-alpine
 
 # Instala dependências básicas do sistema (necessário para alguns pacotes)
 RUN apk add --no-cache git build-base
