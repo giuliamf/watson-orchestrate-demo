@@ -1,0 +1,140 @@
+:root {
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+
+  color-scheme: light dark;
+  color: rgba(255, 255, 255, 0.87);
+  background-color: #242424;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  display: flex;
+  place-items: flex-start; /* Changed from center to allow scrolling */
+  min-width: 320px;
+  min-height: 100vh;
+  justify-content: center;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+  width: 100%;
+}
+
+h1 {
+  font-size: 2.5em;
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.projects-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 2rem;
+  width: 100%;
+}
+
+.project-card {
+  background-color: #1a1a1a;
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s, box-shadow 0.2s;
+  border: 1px solid #333;
+  display: flex;
+  flex-direction: column;
+}
+
+.project-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 12px rgba(0, 0, 0, 0.2);
+  border-color: #646cff;
+}
+
+.project-card h2 {
+  margin-top: 0;
+  margin-bottom: 1rem;
+  color: #fff;
+  font-size: 1.5rem;
+}
+
+.project-info p {
+  margin: 0.5rem 0;
+  color: #ccc;
+}
+
+.project-info strong {
+  color: #fff;
+}
+
+.status {
+  padding: 0.2rem 0.6rem;
+  border-radius: 4px;
+  font-size: 0.9em;
+  font-weight: bold;
+}
+
+.status.active, .status.em_andamento {
+  background-color: #1b5e20;
+  color: #a5d6a7;
+}
+
+.status.completed, .status.concluido {
+  background-color: #0d47a1;
+  color: #90caf9;
+}
+
+.status.pending, .status.pendente {
+  background-color: #e65100;
+  color: #ffcc80;
+}
+
+.description {
+  margin-top: 1rem;
+  font-size: 0.9em;
+  color: #888;
+  font-style: italic;
+}
+
+.loading, .error {
+  text-align: center;
+  font-size: 1.2rem;
+  margin-top: 2rem;
+}
+
+.error {
+  color: #ff5252;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    color: #213547;
+    background-color: #ffffff;
+  }
+  
+  .project-card {
+    background-color: #f9f9f9;
+    border-color: #e0e0e0;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  }
+  
+  .project-card h2 {
+    color: #213547;
+  }
+
+  .project-info p {
+    color: #555;
+  }
+
+  .project-info strong {
+    color: #213547;
+  }
+}
