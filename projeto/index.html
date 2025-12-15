@@ -14,7 +14,7 @@
     <header class="ibm-header">
         <div class="ibm-logo-container">
             <svg class="ibm-logo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 69 24" width="69" height="24">
-                <path d="ibm" fill="#000"></path>
+                <path d="M11.9 8.1V16H8.2V8.1h3.7zm1.8-1.8H6.4v11.5h7.3V6.3zm12.6 1.8V16h-3.7V8.1h3.7zm1.8-1.8h-7.3v11.5h7.3V6.3zM46.6 6.3h-7.3v11.5h7.3V6.3zm-1.8 9.7h-3.7V8.1h3.7v7.9zM5.5 8.1v2.7H2.8V8.1h2.7zm-2.7 4.5V16h2.7v-3.4H2.8zm3.6-6.3H.9v11.5h5.4v-2.7H4.5v-1.8h1.9v-2.7H4.5V8.1h1.9V6.3zM34.8 6.3h-7.1v11.5h7.1V6.3zm-1.8 9.7h-3.5V8.1h3.5v7.9zM58.7 6.3h-7.3v11.5h7.3V6.3zm-1.8 9.7h-3.7V8.1h3.7v7.9z" fill="#000"></path>
             </svg>
         </div>
         <nav class="ibm-nav">
@@ -26,7 +26,7 @@
         </nav>
         <div class="ibm-header-actions">
             <button class="ibm-header-icon search-icon">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 32 32"><path d=""></path></svg>
+                <i class="fas fa-search"></i>
             </button>
         </div>
     </header>
@@ -46,7 +46,7 @@
             </div>
         </div>
         <button id="filters-btn" class="action-button"><i class="fas fa-filter"></i> Filtrar Profissionais</button>
-        
+        <button id="projects-btn" class="action-button contact-button"><i class="fas fa-diagram-project"></i> Projetos</button>
 
         <!-- Zoom Controls -->
         <div class="zoom-controls">
@@ -58,7 +58,7 @@
         </div>
     </main>
 
-    <!-- Modal de Filtros -->
+    <!-- Filters Modal -->
     <div id="filters-modal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -71,7 +71,7 @@
                 </div>
                 <div class="filter-options">
                     <div class="filter-option">
-                        <span>Transformação em Cloud</span>
+                        <span>Cloud Transformation</span>
                         <span class="add-icon">&#43;</span>
                     </div>
                     <div class="filter-option">
@@ -91,18 +91,17 @@
                         <span class="add-icon">&#43;</span>
                     </div>
                     <div class="filter-option">
-                        <span>Segurança</span>
+                        <span>Security</span>
                         <span class="add-icon">&#43;</span>
                     </div>
                     <div class="filter-option">
-                        <span>Serviços Financeiros</span>
+                        <span>Financial Services</span>
                         <span class="add-icon">&#43;</span>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-
 
 <script>
   window.wxOConfiguration = {
@@ -124,18 +123,18 @@
     document.head.appendChild(script);
   }, 0);                     
 </script>
-    
-    <!-- Modal de Contato -->
+
+    <!-- Contact Modal -->
     <div id="contact-modal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h2>Contato com a Equipe</h2>
+                <h2>Contact the Team</h2>
                 <span class="close-btn">&times;</span>
             </div>
             <div class="modal-body">
                 <form id="contact-form">
                     <div class="form-group">
-                        <label for="name">Nome:</label>
+                        <label for="name">Name:</label>
                         <input type="text" id="name" class="form-control" required>
                     </div>
                     <div class="form-group">
@@ -143,15 +142,15 @@
                         <input type="email" id="email" class="form-control" required>
                     </div>
                     <div class="form-group">
-                        <label for="subject">Assunto:</label>
+                        <label for="subject">Subject:</label>
                         <input type="text" id="subject" class="form-control" required>
                     </div>
                     <div class="form-group">
-                        <label for="details">Detalhes:</label>
+                        <label for="details">Details:</label>
                         <textarea id="details" class="form-control" rows="5" required></textarea>
                     </div>
                     <div class="form-group">
-                        <label>Anexar Arquivos:</label>
+                        <label>Attach Files:</label>
                         <div class="file-upload">
                             <span>+</span>
                         </div>
@@ -159,14 +158,14 @@
                     <div class="contact-options">
                         <div class="contact-option">
                             <span class="icon">&#43;</span>
-                            <span>Fale comigo via Slack</span>
+                            <span>Contact me via Slack</span>
                         </div>
                         <div class="contact-option">
                             <span class="icon">&#43;</span>
-                            <span>Fale comigo por E-mail</span>
+                            <span>Contact me via Email</span>
                         </div>
                     </div>
-                    <button type="submit" class="submit-btn">Enviar</button>
+                    <button type="submit" class="submit-btn">Submit</button>
                 </form>
             </div>
         </div>
@@ -182,29 +181,29 @@
                 <div class="worker-profile">
                     <div class="worker-image"></div>
                     <div class="worker-profile-main">
-                        <h2 id="worker-name">Álvaro</h2>
-                        <p id="worker-title">IBM Expert Labs Delivery Chief Architect</p>
+                        <h2 id="worker-name"></h2>
+                        <p id="worker-title"></p>
                         <div class="worker-contact">
                             <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/slack/slack-original.svg" alt="Slack" width="24" height="24">
-                            <span id="worker-slack">@alvaro</span>
+                            <span id="worker-slack"></span>
                         </div>
                     </div>
                 </div>
                 <div class="worker-info">
                     <div class="info-section">
-                        <h3>Domínios/Ofertas Suportados:</h3>
+                        <h3>Supported Domains/Offers:</h3>
                         <ul id="worker-domains" class="bullet-list"></ul>
                     </div>
                     <div class="info-section">
-                        <h3>Habilidades de Consultoria e Certificações:</h3>
+                        <h3>Consulting Skills & Certifications:</h3>
                         <ul id="worker-skills" class="bullet-list"></ul>
                     </div>
                     <div class="info-section">
-                        <h3>Indústrias:</h3>
+                        <h3>Industries:</h3>
                         <ul id="worker-industries" class="bullet-list"></ul>
                     </div>
                     <div class="info-section">
-                        <h3>Experiências:</h3>
+                        <h3>Experiences:</h3>
                         <div id="worker-experiences"></div>
                     </div>
                 </div>
@@ -213,5 +212,32 @@
     </div>
 
     <script src="script.js"></script>
+    <script>
+        // Initialize static zoom controls if panzoomInstance is available
+        document.addEventListener('DOMContentLoaded', () => {
+            // Wait a bit for panzoomInstance to be ready from script.js
+            setTimeout(() => {
+                // Wire up static controls
+                if (typeof panzoomInstance !== 'undefined') {
+                    const zoomIn = document.getElementById('zoom-in');
+                    const zoomOut = document.getElementById('zoom-out');
+                    const zoomReset = document.getElementById('zoom-reset');
+                    
+                    if (zoomIn) zoomIn.addEventListener('click', () => panzoomInstance.zoomIn());
+                    if (zoomOut) zoomOut.addEventListener('click', () => panzoomInstance.zoomOut());
+                    if (zoomReset) zoomReset.addEventListener('click', () => panzoomInstance.reset());
+                }
+
+                // Remove duplicate zoom controls generated by script.js
+                // The generated ones don't have IDs on the buttons
+                const allZoomControls = document.querySelectorAll('.zoom-controls');
+                allZoomControls.forEach(ctrl => {
+                    if (!ctrl.querySelector('#zoom-in')) {
+                        ctrl.style.display = 'none'; // or ctrl.remove()
+                    }
+                });
+            }, 100);
+        });
+    </script>
 </body>
 </html>

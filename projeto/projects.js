@@ -2,14 +2,25 @@ document.addEventListener('DOMContentLoaded', () => {
   const projects = [
     { id: 1, name: 'Itau', owner: 'Felipe Akahoshi', status: 'in_progress', start: '2025-06-01', end: '', tags: ['Cloud', 'Migration', 'Azure'],
       proposalType: 'Fixed Price', budget: 450000,
+      requirements: 'Migração completa para Azure com zero downtime.',
+      stakeholders: 'CTO Itau, Gerente de Infra',
+      metrics: 'Uptime 99.99%, Redução de custo 15%',
+      logs: [
+        { date: '2025-01-10T10:00:00', user: 'Felipe Akahoshi', action: 'Projeto criado' },
+        { date: '2025-02-15T14:30:00', user: 'System', action: 'Status alterado para in_progress' }
+      ],
       professionals: [
-        { name: 'Felipe Akahoshi', role: 'Lead Architect', seniority: 'Senior' },
-        { name: 'Giulia Moura', role: 'UX Designer', seniority: 'Intern' },
-        { name: 'Bruno Silva', role: 'Cloud Engineer', seniority: 'Mid' }
+        { name: 'Felipe Akahoshi', role: 'Lead Architect', seniority: 'Senior', hoursPlanned: 200, hoursActual: 150 },
+        { name: 'Giulia Moura', role: 'UX Designer', seniority: 'Intern', hoursPlanned: 80, hoursActual: 20 },
+        { name: 'Bruno Silva', role: 'Cloud Engineer', seniority: 'Mid', hoursPlanned: 160, hoursActual: 155 }
       ]
     },
     { id: 2, name: 'Casas Bahia', owner: 'Giulia Moura', status: 'completed', start: '2025-02-10', end: '2025-06-30', tags: ['Data', 'Analytics', 'Retail'],
       proposalType: 'Time & Materials', budget: 320000,
+      logs: [
+        { date: '2024-12-01T09:00:00', user: 'Giulia Moura', action: 'Projeto iniciado' },
+        { date: '2025-06-30T18:00:00', user: 'System', action: 'Projeto concluído' }
+      ],
       professionals: [
         { name: 'Giulia Moura', role: 'Product Designer', seniority: 'Junior' },
         { name: 'Ana Costa', role: 'Data Engineer', seniority: 'Senior' },
@@ -129,7 +140,8 @@ document.addEventListener('DOMContentLoaded', () => {
       list = list.filter(p =>
         p.name.toLowerCase().includes(q) ||
         p.owner.toLowerCase().includes(q) ||
-        p.tags.join(' ').toLowerCase().includes(q)
+        p.tags.join(' ').toLowerCase().includes(q) ||
+        (p.professionals && p.professionals.some(prof => prof.name.toLowerCase().includes(q)))
       );
     }
     renderMetrics(list);
@@ -189,6 +201,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function showProjectDetails(p) {
+    const project = p; // Alias p to project for consistency
     // Header
     document.getElementById('project-detail-name').textContent = p.name;
     // Overview fields
@@ -201,6 +214,11 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('project-detail-dates').textContent = dateText;
     document.getElementById('project-detail-tags').textContent = p.tags.join(', ');
 
+    // New Fields
+    document.getElementById('project-detail-requirements').textContent = p.requirements || '-';
+    document.getElementById('project-detail-stakeholders').textContent = p.stakeholders || '-';
+    document.getElementById('project-detail-metrics').textContent = p.metrics || '-';
+
     // Status chip next to title for visibility
     const statusChip = document.getElementById('project-detail-status-chip');
     if (statusChip) {
@@ -212,128 +230,286 @@ document.addEventListener('DOMContentLoaded', () => {
     const tbodyProf = document.getElementById('project-detail-professionals');
     tbodyProf.innerHTML = '';
     (p.professionals || []).forEach(person => {
+      // Mock hours if not present
+      const planned = person.hoursPlanned || 160;
+      const actual = person.hoursActual || Math.floor(Math.random() * 100);
+      const percentage = Math.min((actual / planned) * 100, 100);
+      
+      let statusClass = '';
+      if (percentage > 90) statusClass = 'danger';
+      else if (percentage > 75) statusClass = 'warning';
+
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td>${person.name}</td>
         <td>${person.role}</td>
         <td>${formatBanda(person.seniority)}</td>
+        <td class="hours-cell">
+            <div class="hours-bar-container">
+                <div class="hours-bar-fill ${statusClass}" style="width: ${percentage}%"></div>
+            </div>
+            <div class="hours-text">${actual}/${planned}h (${Math.round(percentage)}%)</div>
+        </td>
       `;
       tbodyProf.appendChild(tr);
     });
+
+    // Logs Section
+    // Logs
+    const logsContainer = document.getElementById('project-detail-logs');
+    logsContainer.innerHTML = '';
+    
+    if (project.logs && project.logs.length > 0) {
+        // Sort logs by date desc
+        const sortedLogs = [...project.logs].sort((a, b) => new Date(b.date) - new Date(a.date));
+        
+        sortedLogs.forEach(log => {
+            const logEl = document.createElement('div');
+            logEl.className = 'log-entry';
+            
+            let iconClass = 'system';
+            let icon = 'fas fa-info';
+            
+            if (log.type === 'activity') {
+                iconClass = 'activity';
+                icon = 'fas fa-clock';
+            } else if (log.user && log.user !== 'System') {
+                iconClass = 'user';
+                icon = 'fas fa-user';
+            }
+
+            let detailsHtml = '';
+            if (log.details) {
+                detailsHtml = `
+                    <div class="log-details">
+                        ${log.details.tasks ? `<div class="log-detail-row"><span class="log-label">Tarefas:</span> <span>${log.details.tasks}</span></div>` : ''}
+                        ${log.details.time ? `<div class="log-detail-row"><span class="log-label">Duração:</span> <span>${log.details.time}</span></div>` : ''}
+                        ${log.details.obs ? `<div class="log-detail-row"><span class="log-label">Obs:</span> <span>${log.details.obs}</span></div>` : ''}
+                    </div>
+                `;
+            }
+            
+            logEl.innerHTML = `
+                <div class="log-icon ${iconClass}">
+                    <i class="${icon}"></i>
+                </div>
+                <div class="log-content">
+                    <div class="log-header">
+                        <div class="log-author">
+                            ${log.user} 
+                            ${log.role ? `<span class="log-author-role">(${log.role})</span>` : ''}
+                        </div>
+                        <div class="log-date">${new Date(log.date).toLocaleString()}</div>
+                    </div>
+                    <div class="log-body">${log.action}</div>
+                    ${detailsHtml}
+                </div>
+            `;
+            logsContainer.appendChild(logEl);
+        });
+    } else {
+        logsContainer.innerHTML = '<p class="empty-logs">Nenhum registro encontrado.</p>';
+    }
+
+    detailModal.style.display = 'flex';
+    
+    // Set current project ID for activity log
+    document.getElementById('activity-log-modal').dataset.projectId = project.id;
 
     // Initialize chat bound to this project
     currentProject = p;
     initProjectChat();
 
-    // Show the modal
-    detailModal.style.display = 'flex';
     // Populate Excel area with a download link when applicable
     renderExcelForProject(p);
   }
 
-  // Show a simple download link for the project Excel file (Itau only)
-  function renderExcelForProject(p) {
-    const container = document.querySelector('.excel-placeholder');
-    if (!container) return;
+  // Activity Log Modal
+  const activityModal = document.getElementById('activity-log-modal');
+    const activityBtn = document.getElementById('add-activity-btn');
+    const closeActivityBtn = document.getElementById('close-activity-log');
+    const cancelActivityBtn = document.getElementById('cancel-activity-log');
+    const activityForm = document.getElementById('activity-log-form');
 
-    // Reset container content
-    container.innerHTML = '';
+    if (activityBtn) {
+        activityBtn.addEventListener('click', () => {
+            const projectId = activityModal.dataset.projectId;
+            const project = projects.find(p => p.id === projectId);
+            
+            if (project) {
+                const select = document.getElementById('al-professional');
+                select.innerHTML = '<option value="">Selecione...</option>';
+                
+                project.professionals.forEach(p => {
+                    const option = document.createElement('option');
+                    option.value = p.name;
+                    option.textContent = `${p.name} - ${p.role}`;
+                    option.dataset.role = p.role;
+                    option.dataset.seniority = p.seniority;
+                    select.appendChild(option);
+                });
+                
+                // Set default date to today
+                document.getElementById('al-date').valueAsDate = new Date();
+                
+                activityModal.style.display = 'flex';
+            }
+        });
+    }
+    
+    // --- New Project Modal Logic ---
+    const newProjectBtn = document.getElementById('new-project-btn');
+    const newProjectModal = document.getElementById('new-project-modal');
+    const closeNewProjectBtn = document.getElementById('close-new-project');
+    const cancelNewProjectBtn = document.getElementById('cancel-new-project');
+    const newProjectForm = document.getElementById('new-project-form');
 
-    // Only provide the link for the Itau project
-    if ((p.name || '').toLowerCase() !== 'itau') {
-    container.innerHTML = '<p>Nenhum arquivo Excel associado a este projeto.</p>';
-      return;
+    if (newProjectBtn && newProjectModal) {
+        newProjectBtn.addEventListener('click', () => {
+            newProjectModal.style.display = 'flex';
+        });
+
+        const closeNewProjectModal = () => {
+            newProjectModal.style.display = 'none';
+            newProjectForm.reset();
+        };
+
+        if (closeNewProjectBtn) closeNewProjectBtn.addEventListener('click', closeNewProjectModal);
+        if (cancelNewProjectBtn) cancelNewProjectBtn.addEventListener('click', closeNewProjectModal);
+
+        window.addEventListener('click', (e) => {
+            if (e.target === newProjectModal) {
+                closeNewProjectModal();
+            }
+        });
+
+        newProjectForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+
+            const name = document.getElementById('np-name').value;
+            const owner = document.getElementById('np-owner').value;
+            const status = document.getElementById('np-status').value;
+            const start = document.getElementById('np-start').value;
+            const end = document.getElementById('np-end').value;
+            const budget = parseFloat(document.getElementById('np-budget').value) || 0;
+            const proposalType = document.getElementById('np-type').value;
+            const requirements = document.getElementById('np-requirements').value;
+            const stakeholders = document.getElementById('np-stakeholders').value;
+            const metrics = document.getElementById('np-metrics').value;
+
+            const newId = projects.length > 0 ? Math.max(...projects.map(p => p.id)) + 1 : 1;
+
+            const newProject = {
+                id: newId,
+                name,
+                owner,
+                status,
+                start,
+                end,
+                tags: ['Novo'],
+                proposalType,
+                budget,
+                requirements,
+                stakeholders,
+                metrics,
+                professionals: [],
+                logs: [{ 
+                    date: new Date().toISOString(), 
+                    user: 'System', 
+                    action: 'Projeto criado',
+                    type: 'system'
+                }]
+            };
+
+            projects.push(newProject);
+            renderTable(projects);
+            applyFilters();
+            renderMetrics(projects);
+            
+            closeNewProjectModal();
+        });
     }
 
-    const fileUrl = 'projeto_casas_bahia.xlsx';
-    const label = document.createElement('div');
-    label.style.marginBottom = '12px';
-    label.style.color = 'var(--ibm-gray-70)';
-    label.textContent = 'Arquivo Excel:';
-    const link = document.createElement('a');
-    link.href = fileUrl;
-    link.target = '_blank';
-    link.rel = 'noopener';
-    link.textContent = 'Baixar arquivo Excel do projeto';
-    link.style.display = 'inline-block';
-    link.style.padding = '8px 12px';
-    link.style.border = '1px solid var(--ibm-gray-30)';
-    link.style.borderRadius = '4px';
-    link.style.backgroundColor = 'var(--ibm-white)';
-    link.style.color = 'var(--ibm-gray-100)';
-
-    container.appendChild(label);
-    container.appendChild(link);
-  }
-
-  function initProjectChat() {
-    const messages = document.getElementById('chat-messages');
-    const input = document.getElementById('chat-input');
-    const sendBtn = document.getElementById('chat-send');
-    if (!messages || !input || !sendBtn) return;
-
-    messages.innerHTML = '';
-    input.value = '';
-    addChatMessage(`Olá! Pergunte sobre ${currentProject.name}: orçamento, tipo de proposta, responsável, status, datas, tags ou profissionais (funções, banda).`, 'bot');
-
-    const send = () => {
-      const text = input.value.trim();
-      if (!text) return;
-      addChatMessage(text, 'user');
-      const reply = answerProjectQuestion(text, currentProject);
-      addChatMessage(reply, 'bot');
-      input.value = '';
-    };
-
-    // Reset listeners by cloning nodes (to avoid duplicate handlers)
-    const newInput = input.cloneNode(true);
-    input.parentNode.replaceChild(newInput, input);
-    const newSend = sendBtn.cloneNode(true);
-    sendBtn.parentNode.replaceChild(newSend, sendBtn);
-
-    newInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        send();
-      }
-    });
-    newSend.addEventListener('click', send);
-  }
-
-  function addChatMessage(text, sender) {
-    const messages = document.getElementById('chat-messages');
-    if (!messages) return;
-    const div = document.createElement('div');
-    div.className = `chat-msg ${sender}`;
-    div.textContent = text;
-    messages.appendChild(div);
-    messages.scrollTop = messages.scrollHeight;
-  }
-
-  function answerProjectQuestion(q, p) {
-    const s = q.toLowerCase();
-    if (s.includes('budget') || s.includes('price') || s.includes('cost') || s.includes('orçamento')) {
-      return `Orçamento: ${formatCurrencyBRL(p.budget)}. Tipo de proposta: ${p.proposalType}.`;
+    if (closeActivityBtn) {
+        closeActivityBtn.addEventListener('click', () => {
+            activityModal.style.display = 'none';
+            activityForm.reset();
+        });
     }
-    if (s.includes('proposal') || s.includes('proposta')) {
-      return `O tipo de proposta é ${p.proposalType}.`;
+
+    if (cancelActivityBtn) {
+        cancelActivityBtn.addEventListener('click', () => {
+            activityModal.style.display = 'none';
+            activityForm.reset();
+        });
     }
-    if (s.includes('owner') || s.includes('who') || s.includes('responsável')) {
-      return `Responsável: ${p.owner}.`;
+
+    if (activityForm) {
+        activityForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            const projectId = activityModal.dataset.projectId;
+            const project = projects.find(p => p.id === projectId);
+            
+            if (project) {
+                const profSelect = document.getElementById('al-professional');
+                const selectedOption = profSelect.options[profSelect.selectedIndex];
+                
+                const date = document.getElementById('al-date').value;
+                const start = document.getElementById('al-start').value;
+                const end = document.getElementById('al-end').value;
+                const tasks = document.getElementById('al-tasks').value;
+                const obs = document.getElementById('al-obs').value;
+
+                // Calculate duration
+                const startTime = new Date(`2000-01-01T${start}`);
+                const endTime = new Date(`2000-01-01T${end}`);
+                const diffMs = endTime - startTime;
+                const diffHrs = Math.floor(diffMs / 3600000);
+                const diffMins = Math.round(((diffMs % 3600000) / 60000));
+                const duration = `${diffHrs}h ${diffMins}m`;
+
+                const newLog = {
+                    date: new Date().toISOString(),
+                    user: selectedOption.value,
+                    role: `${selectedOption.dataset.role} - ${selectedOption.dataset.seniority}`,
+                    action: 'Registro de Atividade',
+                    type: 'activity',
+                    details: {
+                        tasks: tasks,
+                        time: `${date} (${start} - ${end}) • Total: ${duration}`,
+                        obs: obs
+                    }
+                };
+
+                if (!project.logs) project.logs = [];
+                project.logs.push(newLog);
+                
+                // Update actual hours for professional (mock logic)
+                const prof = project.professionals.find(p => p.name === selectedOption.value);
+                if (prof) {
+                    prof.hoursActual = (prof.hoursActual || 0) + (diffMs / 3600000);
+                }
+
+                activityModal.style.display = 'none';
+                activityForm.reset();
+                
+                // Refresh details
+                showProjectDetails(projectId);
+            }
+        });
     }
-    if (s.includes('status')) {
-      return `Status: ${formatStatus(p.status)}.`;
+
+    // Close modals when clicking outside
+    window.onclick = function(event) {
+        if (event.target == detailModal) { // Fixed: modal -> detailModal
+            detailModal.style.display = "none";
+        }
+        if (event.target == newProjectModal) {
+            newProjectModal.style.display = "none";
+        }
+        if (event.target == activityModal) {
+            activityModal.style.display = "none";
+        }
     }
-    if (s.includes('date') || s.includes('timeline') || s.includes('start') || s.includes('end') || s.includes('data')) {
-      return `Cronograma: ${p.start || '-'} → ${p.end || '-'}.`;
-    }
-    if (s.includes('tag') || s.includes('area') || s.includes('domain') || s.includes('tags')) {
-      return `Tags: ${p.tags.join(', ')}.`;
-    }
-    if (s.includes('professional') || s.includes('team') || s.includes('role') || s.includes('seniority') || s.includes('banda') || s.includes('profissional') || s.includes('equipe') || s.includes('função')) {
-      const list = (p.professionals || []).map(pr => `${pr.name} — ${pr.role} (${formatBanda(pr.seniority)})`).join('; ');
-      return list ? `Profissionais: ${list}.` : 'Nenhum profissional listado.';
-    }
-    return 'Posso responder sobre orçamento, tipo de proposta, responsável, status, datas, tags e profissionais (funções, banda).';
-  }
 });

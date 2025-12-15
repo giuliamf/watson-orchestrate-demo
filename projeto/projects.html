@@ -27,9 +27,14 @@
 
     <main>
         <div class="projects-container">
-            <div class="projects-header">
-                <h1>Painel de Projetos</h1>
-                <p>Visão geral de projetos em andamento e concluídos.</p>
+            <div class="projects-header-row">
+                <div class="projects-header-info">
+                    <h1>Painel de Projetos</h1>
+                    <p>Visão geral de projetos em andamento e concluídos.</p>
+                </div>
+                <button id="new-project-btn" class="primary-action-btn">
+                    <i class="fas fa-plus"></i> Novo Projeto
+                </button>
             </div>
 
             <div class="projects-controls">
@@ -96,17 +101,35 @@
                     <p><strong>Tags:</strong> <span id="project-detail-tags"></span></p>
                 </div>
                 <div class="info-section">
+                    <h3>Especificações</h3>
+                    <p><strong>Requisitos:</strong> <span id="project-detail-requirements"></span></p>
+                    <p><strong>Stakeholders:</strong> <span id="project-detail-stakeholders"></span></p>
+                    <p><strong>Métricas:</strong> <span id="project-detail-metrics"></span></p>
+                </div>
+                <div class="info-section">
                     <h3>Profissionais</h3>
                     <table class="projects-table">
                         <thead>
                             <tr>
                                 <th>Nome</th>
                                 <th>Função</th>
-            <th>Banda</th>
+                                <th>Banda</th>
+                                <th>Horas (Plan/Real)</th>
                             </tr>
                         </thead>
                         <tbody id="project-detail-professionals"></tbody>
                     </table>
+                </div>
+                <div class="info-section">
+                    <div class="logs-header-row">
+                        <h3>Histórico de Alterações (Logs)</h3>
+                        <button id="add-activity-btn" class="secondary-action-btn">
+                            <i class="fas fa-clock"></i> Registrar Atividade
+                        </button>
+                    </div>
+                    <div id="project-detail-logs" class="logs-container">
+                        <p class="empty-logs">Nenhum registro encontrado.</p>
+                    </div>
                 </div>
                 </div>
 
@@ -124,6 +147,129 @@
             </div>
             <div class="excel-placeholder">
                 <p>O link para download do Excel do projeto aparece aqui.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- New Project Modal -->
+    <div id="new-project-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Novo Projeto</h2>
+                <span class="close-btn" id="close-new-project">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="new-project-form">
+                    <div class="form-section">
+                        <h3>Informações Básicas</h3>
+                        <div class="form-group">
+                            <label for="np-name">Nome do Projeto</label>
+                            <input type="text" id="np-name" required>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="np-owner">Responsável (PM)</label>
+                                <input type="text" id="np-owner" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="np-status">Status</label>
+                                <select id="np-status">
+                                    <option value="in_progress">Em Andamento</option>
+                                    <option value="completed">Concluído</option>
+                                    <option value="planning">Planejamento</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="np-start">Data Início</label>
+                                <input type="date" id="np-start" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="np-end">Data Fim (Prevista)</label>
+                                <input type="date" id="np-end">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <h3>Detalhes & Métricas</h3>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="np-budget">Orçamento (R$)</label>
+                                <input type="number" id="np-budget" placeholder="0.00">
+                            </div>
+                            <div class="form-group">
+                                <label for="np-type">Tipo de Proposta</label>
+                                <select id="np-type">
+                                    <option value="Fixed Price">Fixed Price</option>
+                                    <option value="Time & Materials">Time & Materials</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="np-requirements">Requisitos Principais</label>
+                            <textarea id="np-requirements" rows="3" placeholder="Liste os requisitos chave..."></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="np-stakeholders">Stakeholders</label>
+                            <input type="text" id="np-stakeholders" placeholder="Ex: Diretor Financeiro, Gerente de TI...">
+                        </div>
+                        <div class="form-group">
+                            <label for="np-metrics">Métricas de Sucesso</label>
+                            <textarea id="np-metrics" rows="2" placeholder="Ex: Aumento de 20% na performance..."></textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="button" class="btn-cancel" id="cancel-new-project">Cancelar</button>
+                        <button type="submit" class="btn-primary">Criar Projeto</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Activity Log Modal -->
+    <div id="activity-log-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Registrar Atividade</h2>
+                <span class="close-btn" id="close-activity-log">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="activity-log-form">
+                    <div class="form-group">
+                        <label for="al-professional">Profissional</label>
+                        <select id="al-professional" required></select>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="al-date">Data</label>
+                            <input type="date" id="al-date" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="al-start">Início</label>
+                            <input type="time" id="al-start" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="al-end">Fim</label>
+                            <input type="time" id="al-end" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="al-tasks">Atividades Realizadas</label>
+                        <textarea id="al-tasks" rows="3" placeholder="Descreva as tarefas em detalhes..." required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="al-obs">Observações</label>
+                        <textarea id="al-obs" rows="2" placeholder="Opcional"></textarea>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn-cancel" id="cancel-activity-log">Cancelar</button>
+                        <button type="submit" class="btn-primary">Registrar</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
