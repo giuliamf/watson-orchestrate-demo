@@ -8,9 +8,10 @@ function App() {
 
   useEffect(() => {
     fetch('/api/projects')
-      .then(res => {
+      .then(async res => {
         if (!res.ok) {
-          throw new Error('Erro ao buscar projetos')
+          const errorData = await res.json().catch(() => ({}));
+          throw new Error(errorData.error || 'Erro ao buscar projetos');
         }
         return res.json()
       })

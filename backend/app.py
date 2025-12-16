@@ -1,9 +1,9 @@
 import os
 from flask import Flask, jsonify
-from dotenv import load_dotenv
+from dotenv import load_dotenv, find_dotenv
 from cloudant_client import get_cloudant
 
-load_dotenv()
+load_dotenv(find_dotenv())
 
 app = Flask(__name__)
 
@@ -21,30 +21,8 @@ def health():
 
 @app.route("/api/projects")
 def get_projects():
-    if not cloudant:
-        return jsonify([
-            {
-                "_id": "1",
-                "name": "Projeto Demo 1", 
-                "status": "Em Andamento", 
-                "responsible": "João Silva", 
-                "description": "Este é um dado fictício pois as credenciais do Cloudant não foram encontradas."
-            },
-            {
-                "_id": "2",
-                "name": "Projeto Demo 2", 
-                "status": "Concluido", 
-                "responsible": "Maria Souza",
-                "description": "Configure o arquivo .env com CLOUDANT_APIKEY, CLOUDANT_URL e CLOUDANT_DB para usar dados reais."
-            },
-            {
-                "_id": "3",
-                "name": "Novo Website", 
-                "status": "Pendente", 
-                "responsible": "Carlos Oliveira",
-                "description": "Redesign do site corporativo."
-            }
-        ])
+    if cloudant is None:
+        return jsonify({"error": "Conexão com Cloudant não estabelecida. Verifique as credenciais no arquivo .env"}), 500
 
     try:
         response = cloudant.post_all_docs(
@@ -56,8 +34,8 @@ def get_projects():
         return jsonify(projects)
 
     except Exception as e:
-        print(e)
-        return jsonify({"error": "Erro ao buscar projetos"}), 500
+        print(f"Erro no endpoint /api/projects: {e}")
+        return jsonify({"error": f"Erro ao buscar projetos: {str(e)}"}), 500
 
 if __name__ == "__main__":
     app.run(
