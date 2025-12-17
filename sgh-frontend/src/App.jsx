@@ -31,13 +31,13 @@ const API_URL = ""
 const ConfirmModal = ({ isOpen, title, message, onConfirm, onCancel }) => {
     if (!isOpen) return null;
     return (
-        <div style={{position:'fixed', top:0, left:0, width:'100%', height:'100%', background:'rgba(0,0,0,0.4)', backdropFilter: 'blur(2px)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000}}>
-            <div style={{background:'white', padding:'24px', borderRadius:'12px', maxWidth:'400px', width:'90%', boxShadow:'0 10px 40px rgba(0,0,0,0.15)', animation: 'fadeIn 0.2s'}}>
-                <h3 style={{marginTop:0, fontSize:'18px', color:'#161616'}}>{title}</h3>
-                <p style={{color:'#525252', fontSize:'14px', lineHeight:'1.5', margin:'12px 0 24px 0'}}>{message}</p>
-                <div style={{display:'flex', justifyContent:'flex-end', gap:'12px'}}>
-                    <button onClick={onCancel} style={{padding:'10px 16px', background:'white', border:'1px solid #e0e0e0', color:'#525252', cursor:'pointer', borderRadius:'6px', fontSize:'13px', fontWeight:'500'}}>Cancelar</button>
-                    <button onClick={onConfirm} style={{padding:'10px 16px', background:'#da1e28', color:'white', border:'none', cursor:'pointer', borderRadius:'6px', fontSize:'13px', fontWeight:'600', boxShadow:'0 2px 5px rgba(218,30,40,0.3)'}}>Confirmar Exclusão</button>
+        <div className="modal-overlay">
+            <div className="modal-content">
+                <h3 className="modal-title">{title}</h3>
+                <p className="modal-message">{message}</p>
+                <div className="modal-actions">
+                    <button onClick={onCancel} className="btn-secondary">Cancelar</button>
+                    <button onClick={onConfirm} className="btn-danger">Confirmar Exclusão</button>
                 </div>
             </div>
         </div>
@@ -89,7 +89,7 @@ const TechForm = ({ form, setForm, workItems, onSubmit }) => {
     const estimated = (manualVal * rateInfo.val).toFixed(2);
 
     return (
-        <form onSubmit={onSubmit} style={{maxWidth: '700px', margin: '0 auto'}}>
+        <form onSubmit={onSubmit} className="form-container">
             <div className="form-group">
                 <label>Selecione o Projeto <span style={{color:'red'}}>*</span></label>
                 <select className="form-control" value={form.work_item_id} onChange={e => setForm({...form, work_item_id: e.target.value})} required>
@@ -100,19 +100,19 @@ const TechForm = ({ form, setForm, workItems, onSubmit }) => {
             <div className="form-group"><label>Data</label><input type="date" className="form-control" value={form.date} onChange={e => setForm({...form, date: e.target.value})} /></div>
             
             {rateInfo.label && (
-                <div style={{background: '#e5f6fd', borderLeft: '4px solid #0f62fe', padding: '16px', borderRadius: '4px', marginBottom: '1.5rem', boxShadow: '0 2px 8px rgba(0,0,0,0.05)'}}>
-                    <div style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
+                <div className="info-box">
+                    <div className="info-box-header">
                         <div>
-                            <div style={{fontSize:'11px', color:'#525252', textTransform:'uppercase', letterSpacing:'0.5px', fontWeight:'600', marginBottom:'4px'}}>Regra Detectada</div>
-                            <div style={{fontSize:'16px', color:'#0f62fe', fontWeight:'600'}}>{rateInfo.label}</div>
+                            <div className="info-label">Regra Detectada</div>
+                            <div className="info-value">{rateInfo.label}</div>
                         </div>
                         <div style={{textAlign:'right'}}>
-                            <div style={{fontSize:'11px', color:'#525252', marginBottom:'4px'}}>Multiplicador</div>
-                            <div style={{fontSize:'20px', fontWeight:'bold', color:'#0f62fe'}}>{rateInfo.val}x</div>
+                            <div className="info-label">Multiplicador</div>
+                            <div className="info-multiplier">{rateInfo.val}x</div>
                         </div>
                     </div>
                     {manualVal > 0 && (
-                        <div style={{marginTop:'12px', paddingTop:'12px', borderTop:'1px solid #bce3ff', display:'flex', justifyContent:'space-between', fontSize:'14px'}}>
+                        <div className="info-box-footer">
                             <span>Lançamento: <strong>{manualVal}h</strong></span>
                             <span>Faturável: <strong style={{color:'#198038'}}>{estimated}h</strong></span>
                         </div>
@@ -120,8 +120,8 @@ const TechForm = ({ form, setForm, workItems, onSubmit }) => {
                 </div>
             )}
 
-            <div style={{background: '#f4f4f4', padding: '1.5rem', borderRadius: '4px', marginBottom: '1.5rem', border: '1px solid #e0e0e0'}}>
-                <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1.5rem'}}>
+            <div className="form-section">
+                <div className="form-grid-3">
                     <div className="form-group" style={{marginBottom:0}}><label>Início</label><input type="time" className="form-control" value={form.start_time} onChange={e => setForm({...form, start_time: e.target.value})} required /></div>
                     <div className="form-group" style={{marginBottom:0}}><label>Fim</label><input type="time" className="form-control" value={form.end_time} onChange={e => setForm({...form, end_time: e.target.value})} required /></div>
                     <div className="form-group" style={{marginBottom:0}}>
@@ -150,33 +150,11 @@ const PMDashboard = ({ workItems, onSelectProject, onEdit, onDelete }) => (
                        <td style={{textAlign:'right'}}>
                            <div style={{display:'inline-flex', gap:'12px', justifyContent:'flex-end'}}>
                                <button onClick={(e) => {e.stopPropagation(); onEdit(wi)}} title="Editar"
-                                   style={{
-                                       background:'white', 
-                                       border:'1px solid #e0e0e0', 
-                                       cursor:'pointer', 
-                                       width:'36px', height:'36px', 
-                                       borderRadius:'8px', 
-                                       display:'flex', alignItems:'center', justifyContent:'center', 
-                                       transition:'all 0.2s',
-                                       boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
-                                   }}
-                                   onMouseOver={e=>{e.currentTarget.style.borderColor='#0f62fe'; e.currentTarget.style.background='#edf5ff'}} 
-                                   onMouseOut={e=>{e.currentTarget.style.borderColor='#e0e0e0'; e.currentTarget.style.background='white'}}>
+                                   className="action-btn">
                                    <IconEdit />
                                </button>
                                <button onClick={(e) => {e.stopPropagation(); onDelete(wi.ID)}} title="Excluir"
-                                   style={{
-                                       background:'white', 
-                                       border:'1px solid #e0e0e0', 
-                                       cursor:'pointer', 
-                                       width:'36px', height:'36px', 
-                                       borderRadius:'8px', 
-                                       display:'flex', alignItems:'center', justifyContent:'center', 
-                                       transition:'all 0.2s',
-                                       boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
-                                   }}
-                                   onMouseOver={e=>{e.currentTarget.style.borderColor='#da1e28'; e.currentTarget.style.background='#fff0f1'}} 
-                                   onMouseOut={e=>{e.currentTarget.style.borderColor='#e0e0e0'; e.currentTarget.style.background='white'}}>
+                                   className="action-btn delete">
                                    <IconTrash />
                                </button>
                            </div>
