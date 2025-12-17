@@ -504,3 +504,184 @@ main {
     border-color: var(--ibm-red-60);
     background: #fff0f1;
 }
+
+/* --- Timesheet View --- */
+.week-navigation {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    background: var(--ibm-gray-10);
+    padding: 1rem;
+    border-radius: 4px;
+}
+
+.week-nav-btn {
+    background: var(--ibm-gray-10);
+    border: 1px solid var(--ibm-gray-30);
+    cursor: pointer;
+    font-size: 18px;
+    color: var(--ibm-gray-100);
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+.week-nav-btn:hover {
+    background: var(--ibm-blue-60);
+    color: var(--ibm-white);
+    border-color: var(--ibm-blue-60);
+}
+
+.week-nav-btn:active {
+    background: var(--ibm-blue-80);
+}
+
+.week-display {
+    font-weight: 600;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.today-btn {
+    padding: 4px 12px;
+    border: 1px solid var(--ibm-blue-60);
+    color: var(--ibm-blue-60);
+    background: white;
+    border-radius: 4px;
+    font-size: 12px;
+    cursor: pointer;
+    font-weight: 500;
+}
+
+.today-btn:hover {
+    background: var(--ibm-blue-20);
+}
+
+.timesheet-grid {
+    border: 1px solid var(--ibm-gray-20);
+    border-radius: 4px;
+    background: white;
+}
+
+.timesheet-header {
+    display: grid;
+    grid-template-columns: 2fr repeat(7, 1fr) 0.8fr;
+    background: var(--ibm-gray-10);
+    border-bottom: 1px solid var(--ibm-gray-20);
+}
+
+.timesheet-header-cell {
+    padding: 1rem 0.5rem;
+    text-align: center;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--ibm-gray-80);
+    border-right: 1px solid var(--ibm-gray-20);
+}
+
+.timesheet-header-cell:first-child {
+    text-align: left;
+    padding-left: 1rem;
+}
+
+.timesheet-header-cell:last-child {
+    border-right: none;
+}
+
+.timesheet-row {
+    border-bottom: 1px solid var(--ibm-gray-20);
+}
+
+.timesheet-row-header {
+    padding: 1rem;
+    background: #fcfcfc;
+    border-bottom: 1px solid var(--ibm-gray-10);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 600;
+    color: var(--ibm-blue-80);
+    cursor: pointer;
+}
+
+.timesheet-row-content {
+    display: grid;
+    grid-template-columns: 2fr repeat(7, 1fr) 0.8fr;
+    align-items: center;
+}
+
+.timesheet-label-cell {
+    padding: 1rem;
+    font-size: 13px;
+    color: var(--ibm-gray-80);
+    border-right: 1px solid var(--ibm-gray-20);
+}
+
+.timesheet-input-cell {
+    padding: 0.5rem;
+    border-right: 1px solid var(--ibm-gray-20);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    justify-content: center;
+}
+
+.timesheet-input {
+    width: 40px;
+    height: 32px;
+    text-align: center;
+    border: 1px solid var(--ibm-blue-20);
+    border-radius: 4px;
+    font-size: 14px;
+    color: var(--ibm-black);
+    background-color: var(--ibm-white);
+}
+
+.timesheet-input:focus {
+    outline: 2px solid var(--ibm-blue-60);
+    border-color: transparent;
+}
+
+.timesheet-input.active-cell {
+    border-color: var(--ibm-blue-60);
+    box-shadow: 0 0 0 2px var(--ibm-blue-20);
+}
+
+.details-panel {
+    margin-top: 1.5rem;
+    padding: 1.5rem;
+    background: var(--ibm-white);
+    border: 1px solid var(--ibm-gray-20);
+    border-radius: 4px;
+}
+
+.details-panel h4 {
+    margin-bottom: 1rem;
+    font-size: 14px;
+    color: var(--ibm-gray-80);
+}
+
+.timesheet-total-cell {
+    text-align: center;
+    font-weight: 700;
+    font-size: 14px;
+}
+
+.description-popover {
+    position: absolute;
+    background: white;
+    border: 1px solid var(--ibm-gray-20);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    padding: 1rem;
+    border-radius: 4px;
+    width: 300px;
+    z-index: 100;
+}

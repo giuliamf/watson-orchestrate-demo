@@ -210,6 +210,92 @@ func SetupRouter(db *gorm.DB) *gin.Engine {
 		c.JSON(200, gin.H{"message": "Projeto excluído"})
 	})
 
+	r.GET("/entries", func(c *gin.Context) {
+		employeeID := c.Query("employee_id")
+		startDate := c.Query("start_date")
+		endDate := c.Query("end_date")
+
+		var entries []models.TimeEntry
+		query := db.Preload("WorkItem").Where("employee_id = ?", employeeID)
+
+		if startDate != "" && endDate != "" {
+			query = query.Where("date >= ? AND date <= ?", startDate, endDate)
+		}
+
+		if err := query.Find(&entries).Error; err != nil {
+			c.JSON(500, gin.H{"error": "Erro ao buscar lançamentos"})
+			return
+		}
+		c.JSON(200, entries)
+	})
+
+	r.PUT("/entries/:id", func(c *gin.Context) {
+		id := c.Param("id")
+		type EntryUpdate struct {
+			ManualHours float64 `json:"manual_hours"`
+			Description string  `json:"description"`
+		}
+		var input EntryUpdate
+		if err := c.ShouldBindJSON(&input); err != nil {
+			c.JSON(400, gin.H{"error": "JSON inválido"})
+			return
+		}
+
+		var entry models.TimeEntry
+		if err := db.First(&entry, id).Error; err != nil {
+			c.JSON(404, gin.H{"error": "Lançamento não encontrado"})
+			return
+		}
+
+		var wi models.WorkItem
+		if err := db.Preload("Contract").First(&wi, entry.WorkItemID).Error; err != nil {
+			c.JSON(404, gin.H{"error": "WI não encontrado"})
+			return
+		}
+
+		// Revert old values
+		wi.UsedHours -= entry.HoursBillable
+		wi.BillableHours -= entry.HoursBillable
+
+		// Calculate new values
+		// Defaulting to 09:00 start if we assume regular hours, calculating end based on manual hours
+		// This is a simplification to reuse existing logic without breaking it.
+		// Since we only edit hours, we assume it's "Business" time for simplicity or keep original times if possible?
+		// But if hours change, end time must change.
+		startT, _ := time.Parse("15:04", entry.StartTime)
+		if entry.StartTime == "" {
+			startT, _ = time.Parse("15:04", "09:00")
+		}
+		endT := startT.Add(time.Duration(input.ManualHours * float64(time.Hour)))
+		newEndTime := endT.Format("15:04")
+		
+		calcDuration, billable := calculateBillable(entry.Date, entry.StartTime, newEndTime, input.ManualHours, wi.Contract)
+
+		// Check budget
+		saldo := wi.TotalBudgetHours - wi.UsedHours
+		if billable > saldo {
+			c.JSON(403, gin.H{"error": "Saldo insuficiente"})
+			return
+		}
+
+		// Update entry
+		entry.ManualHours = input.ManualHours
+		entry.EndTime = newEndTime
+		entry.CalculatedDuration = calcDuration
+		entry.HoursBillable = billable
+		entry.ActivityDescription = input.Description
+		
+		db.Save(&entry)
+
+		// Update WI
+		wi.UsedHours += billable
+		wi.BillableHours += billable
+		db.Save(&wi)
+
+		createLog("Edição Lançamento", fmt.Sprintf("ID: %d | Horas: %.2f", entry.ID, input.ManualHours), "Tech")
+		c.JSON(200, entry)
+	})
+
 	r.POST("/entries", func(c *gin.Context) {
 		type EntryInput struct {
 			EmployeeID  uint    `json:"employee_id"`

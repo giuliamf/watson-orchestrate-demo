@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import axios from 'axios'
 import './App.css'
 
@@ -58,6 +58,306 @@ const Header = ({ currentUser, setCurrentUser, setPmView }) => (
         </nav>
     </header>
 )
+
+const IconChevronLeft = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+)
+const IconChevronRight = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+)
+const IconChat = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+)
+
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error("ErrorBoundary caught an error", error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ padding: '2rem', textAlign: 'center' }}>
+          <h3>Algo deu errado.</h3>
+          <p>Por favor, recarregue a página.</p>
+          <button className="submit-btn" onClick={() => window.location.reload()} style={{margin:'1rem auto', width:'auto'}}>Recarregar</button>
+        </div>
+      );
+    }
+
+    return this.props.children; 
+  }
+}
+
+const TechWeeklyView = ({ currentUser, workItems }) => {
+    const getSunday = (d) => {
+        const date = new Date(d);
+        const day = date.getDay();
+        const diff = date.getDate() - day;
+        return new Date(date.setDate(diff));
+    }
+
+    const [weekStart, setWeekStart] = useState(getSunday(new Date()));
+    const [entries, setEntries] = useState({});
+    const [loading, setLoading] = useState(false);
+    const [selectedEntry, setSelectedEntry] = useState(null); // { workItemId, date, value, description }
+    const [submitting, setSubmitting] = useState(false);
+    const [saveStatus, setSaveStatus] = useState(""); // "saving", "saved", "error"
+
+    const weekDays = Array.from({ length: 7 }, (_, i) => {
+        const d = new Date(weekStart);
+        d.setDate(d.getDate() + i);
+        return d;
+    });
+
+    const formatDate = (date) => {
+        if (!(date instanceof Date) || isNaN(date)) return "";
+        return date.toISOString().split('T')[0];
+    }
+    
+    const formatLabel = (date) => {
+        if (!(date instanceof Date) || isNaN(date)) return { day: "", date: "" };
+        const days = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+        const months = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+        return { day: days[date.getDay()], date: `${date.getDate()} ${months[date.getMonth()]}` };
+    };
+
+    useEffect(() => {
+        fetchEntries();
+        setSelectedEntry(null);
+    }, [weekStart, currentUser]);
+
+    const fetchEntries = async () => {
+        setLoading(true);
+        try {
+            const startStr = formatDate(weekDays[0]);
+            const endStr = formatDate(weekDays[6]);
+            const res = await axios.get(`${API_URL}/entries?employee_id=${currentUser.id}&start_date=${startStr}&end_date=${endStr}`);
+            
+            if (Array.isArray(res.data)) {
+                const map = {};
+                res.data.forEach(e => {
+                    const d = e.date.split('T')[0];
+                    if (!map[e.work_item_id]) map[e.work_item_id] = {};
+                    map[e.work_item_id][d] = e;
+                });
+                setEntries(map);
+            } else {
+                console.error("Invalid entries response:", res.data);
+            }
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleSelectCell = (workItemId, date, entry, value) => {
+        try {
+            const dateStr = formatDate(date);
+            if (!dateStr) return; // Prevent selection if date is invalid
+
+            // Fix for timezone issue: create date from parts to ensure local time is correct
+            const [y, m, d] = dateStr.split('-').map(Number);
+            const localDate = new Date(y, m - 1, d);
+            
+            setSelectedEntry({
+                workItemId,
+                date: dateStr,
+                value: value || "",
+                description: entry?.description || "",
+                existingId: entry?.ID,
+                displayDate: localDate.toLocaleDateString('pt-BR')
+            });
+        } catch (e) {
+            console.error("Error selecting cell:", e);
+        }
+    };
+
+    const handleInputChange = (e) => {
+        if (selectedEntry) {
+            setSelectedEntry({ ...selectedEntry, value: e.target.value });
+        }
+    };
+
+
+    const handleManualSubmit = async () => {
+        if (!selectedEntry) return;
+        setSubmitting(true);
+        setSaveStatus(""); 
+
+        try {
+            // Replace comma with dot for float parsing
+            const cleanValue = selectedEntry.value.toString().replace(',', '.');
+            const val = parseFloat(cleanValue) || 0;
+            
+            if (val <= 0 && !selectedEntry.description && !selectedEntry.existingId) {
+                alert("Por favor, insira horas ou descrição válida.");
+                setSubmitting(false);
+                return;
+            }
+
+            let res;
+            if (selectedEntry.existingId) {
+                // Update
+                res = await axios.put(`${API_URL}/entries/${selectedEntry.existingId}`, {
+                    manual_hours: val,
+                    description: selectedEntry.description
+                });
+            } else {
+                 // Create
+                 res = await axios.post(`${API_URL}/entries`, {
+                    employee_id: currentUser.id,
+                    work_item_id: selectedEntry.workItemId,
+                    date: selectedEntry.date,
+                    start_time: "09:00",
+                    end_time: "18:00",
+                    manual_hours: val,
+                    description: selectedEntry.description
+                });
+            }
+
+            // Update local state with response
+            const newEntry = selectedEntry.existingId ? res.data : { ...res.data, ID: res.data.id };
+            
+            setEntries(prev => ({
+                ...prev,
+                [selectedEntry.workItemId]: {
+                    ...prev[selectedEntry.workItemId] || {},
+                    [selectedEntry.date]: newEntry
+                }
+            }));
+            
+            // If it was a create, update selectedEntry with the new ID
+            if (!selectedEntry.existingId) {
+                 setSelectedEntry(prev => ({ ...prev, existingId: newEntry.ID }));
+            }
+
+            setSaveStatus("saved");
+            alert("Enviado com sucesso!");
+            setTimeout(() => setSaveStatus(""), 3000);
+
+        } catch (e) {
+            console.error(e);
+            setSaveStatus("error");
+            alert("Erro ao enviar: " + (e.response?.data?.error || e.message));
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    const handleInputBlur = () => {
+        // No auto-save on blur anymore
+    }
+
+    const handleDescriptionChange = (e) => {
+        const val = e.target.value;
+        if (selectedEntry) {
+            const updated = { ...selectedEntry, description: val };
+            setSelectedEntry(updated);
+        }
+    };
+
+    const getTotalHours = (workItemId) => {
+        if (!entries[workItemId]) return 0;
+        return Object.values(entries[workItemId]).reduce((acc, curr) => acc + (curr.manual_hours || 0), 0).toFixed(1);
+    };
+
+    return (
+        <div style={{width: '100%'}}>
+            <div className="week-navigation">
+                <button className="week-nav-btn" onClick={() => setWeekStart(new Date(weekStart.setDate(weekStart.getDate() - 7)))}><IconChevronLeft /></button>
+                <div className="week-display">
+                    <span>{formatLabel(weekDays[0]).date} - {formatLabel(weekDays[6]).date}</span>
+                </div>
+                <button className="week-nav-btn" onClick={() => setWeekStart(new Date(weekStart.setDate(weekStart.getDate() + 7)))}><IconChevronRight /></button>
+                <button className="today-btn" onClick={() => setWeekStart(getSunday(new Date()))}>Hoje</button>
+            </div>
+
+            <div className="timesheet-grid">
+                <div className="timesheet-header">
+                    <div className="timesheet-header-cell">Projeto</div>
+                    {weekDays.map(d => {
+                        const l = formatLabel(d);
+                        return (
+                            <div key={d} className="timesheet-header-cell">
+                                <div>{l.day}</div>
+                                <div style={{fontWeight: 400}}>{l.date}</div>
+                            </div>
+                        )
+                    })}
+                    <div className="timesheet-header-cell">Total</div>
+                </div>
+
+                {workItems.map(wi => (
+                    <div key={wi.ID} className="timesheet-row">
+                        <div className="timesheet-row-header">
+                            {wi.wi_code} - {wi.description}
+                        </div>
+                        <div className="timesheet-row-content">
+                            <div className="timesheet-label-cell">Regular</div>
+                            {weekDays.map(d => {
+                                const dateStr = formatDate(d);
+                                const entry = entries[wi.ID]?.[dateStr];
+                                const isSelected = selectedEntry?.workItemId === wi.ID && selectedEntry?.date === dateStr;
+                                return (
+                                    <div key={dateStr} className="timesheet-input-cell">
+                                        <input 
+                                            className={`timesheet-input ${isSelected ? 'active-cell' : ''}`}
+                                            value={isSelected ? selectedEntry.value : (entry?.manual_hours ? entry.manual_hours : "")}
+                                            onChange={isSelected ? handleInputChange : () => {}}
+                                            onBlur={handleInputBlur}
+                                            onFocus={(e) => handleSelectCell(wi.ID, d, entry, e.target.value)}
+                                            readOnly={isSelected ? false : true} // Only editable when selected (focused)
+                                            onClick={(e) => handleSelectCell(wi.ID, d, entry, e.target.value)}
+                                            placeholder=""
+                                        />
+                                    </div>
+                                )
+                            })}
+                            <div className="timesheet-total-cell">{getTotalHours(wi.ID)}</div>
+                        </div>
+                    </div>
+                ))}
+            </div>
+
+            <div className="details-panel">
+                <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom: '1rem'}}>
+                    <h4>{selectedEntry ? `Detalhes de ${selectedEntry.displayDate}` : "Detalhes do Trabalho"}</h4>
+                    {saveStatus === "saving" && <span style={{fontSize:'12px', color:'#0f62fe'}}>Salvando...</span>}
+                    {saveStatus === "saved" && <span style={{fontSize:'12px', color:'#198038'}}>Salvo!</span>}
+                    {saveStatus === "error" && <span style={{fontSize:'12px', color:'#da1e28'}}>Erro ao salvar</span>}
+                </div>
+                <textarea 
+                    className="form-control" 
+                    rows="3" 
+                    style={{minHeight: '100px', width: '100%', marginBottom: '1rem'}}
+                    placeholder="Insira os detalhes do trabalho aqui..."
+                    value={selectedEntry?.description || ""}
+                    onChange={handleDescriptionChange}
+                    disabled={!selectedEntry}
+                ></textarea>
+                <button 
+                    className="submit-btn" 
+                    style={{width: '100%'}} 
+                    onClick={handleManualSubmit}
+                    disabled={!selectedEntry || submitting}
+                >
+                    {submitting ? "Enviando..." : "Enviar (Salvar)"}
+                </button>
+            </div>
+        </div>
+    )
+}
 
 const TechForm = ({ form, setForm, workItems, onSubmit }) => {
     const [rateInfo, setRateInfo] = useState({ label: '', val: 1.0 })
@@ -166,68 +466,7 @@ const PMDashboard = ({ workItems, onSelectProject, onEdit, onDelete }) => (
     </div>
 )
 
-const PMCreateProject = ({ newProject, setNewProject, onSubmit }) => (
-    <div style={{maxWidth: '800px', margin: '0 auto'}}>
-        <h3 style={{marginBottom: '1.5rem'}}>Novo Projeto & Regras</h3>
-        <form onSubmit={onSubmit}>
-            <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'1rem'}}>
-                <div className="form-group">
-                    <label>CN (Contrato)</label>
-                    <input className="form-control" value={newProject.contract_number} onChange={e=>setNewProject({...newProject, contract_number: e.target.value})} required />
-                </div>
-                <div className="form-group">
-                    <label>WI Code</label>
-                    <input className="form-control" value={newProject.code} onChange={e=>setNewProject({...newProject, code: e.target.value})} required />
-                </div>
-            </div>
-            <div style={{display:'grid', gridTemplateColumns:'2fr 1fr', gap:'1rem'}}>
-                <div className="form-group">
-                    <label>Descrição</label>
-                    <input className="form-control" value={newProject.description} onChange={e=>setNewProject({...newProject, description: e.target.value})} required />
-                </div>
-                <div className="form-group">
-                    <label>Budget</label>
-                    <input type="number" className="form-control" value={newProject.total_budget} onChange={e=>setNewProject({...newProject, total_budget: e.target.value})} required />
-                </div>
-            </div>
 
-            <div style={{background:'#f4f4f4', padding:'1.5rem', borderRadius:'4px', marginTop:'1rem', border:'1px solid #e0e0e0'}}>
-                <h4 style={{fontSize:'14px', marginBottom:'1rem', color:'#0f62fe'}}>Tarifas (Multiplicadores)</h4>
-                
-                <div style={{display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:'1rem', marginBottom:'1rem'}}>
-                    <div className="form-group">
-                        <label style={{fontSize:'12px'}}>Seg-Sex (09-18)</label>
-                        <input type="number" step="0.1" className="form-control" value={newProject.rate_business} onChange={e=>setNewProject({...newProject, rate_business: e.target.value})} />
-                    </div>
-                    <div className="form-group">
-                        <label style={{fontSize:'12px'}}>Seg-Sex (18-22)</label>
-                        <input type="number" step="0.1" className="form-control" value={newProject.rate_evening} onChange={e=>setNewProject({...newProject, rate_evening: e.target.value})} />
-                    </div>
-                    <div className="form-group">
-                        <label style={{fontSize:'12px'}}>Seg-Sex (22-09)</label>
-                        <input type="number" step="0.1" className="form-control" value={newProject.rate_night} onChange={e=>setNewProject({...newProject, rate_night: e.target.value})} />
-                    </div>
-                </div>
-
-                <div style={{display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:'1rem'}}>
-                    <div className="form-group">
-                        <label style={{fontSize:'12px'}}>Sábado (09-18)</label>
-                        <input type="number" step="0.1" className="form-control" value={newProject.rate_sat_day} onChange={e=>setNewProject({...newProject, rate_sat_day: e.target.value})} />
-                    </div>
-                    <div className="form-group">
-                        <label style={{fontSize:'12px'}}>Sábado (18-00)</label>
-                        <input type="number" step="0.1" className="form-control" value={newProject.rate_sat_night} onChange={e=>setNewProject({...newProject, rate_sat_night: e.target.value})} />
-                    </div>
-                    <div className="form-group">
-                        <label style={{fontSize:'12px'}}>Dom/Fer (00-00)</label>
-                        <input type="number" step="0.1" className="form-control" value={newProject.rate_sun_holiday} onChange={e=>setNewProject({...newProject, rate_sun_holiday: e.target.value})} />
-                    </div>
-                </div>
-            </div>
-            <button className="submit-btn" style={{width:'100%', marginTop:'1.5rem'}}>Criar Projeto</button>
-        </form>
-    </div>
-)
 
 const PMEditProject = ({ project, onCancel, onSave }) => {
     const [editForm, setEditForm] = useState({ description: project.description, total_budget: project.total_budget_hours })
@@ -244,7 +483,22 @@ const PMEditProject = ({ project, onCancel, onSave }) => {
     )
 }
 
-const ProjectDetail = ({ project, entries, onBack }) => { if (!project) return <div>Carregando...</div>; const percentage = Math.min(((project.used_hours || 0) / (project.total_budget_hours || 1)) * 100, 100).toFixed(1); let barColor = percentage > 90 ? '#da1e28' : (percentage > 75 ? '#f1c21b' : '#0f62fe'); return (<div><button onClick={onBack} style={{background:'none', border:'none', color:'#0f62fe', cursor:'pointer', marginBottom:'1rem'}}>← Voltar</button><div style={{marginBottom:'2rem', borderBottom:'1px solid #e0e0e0', paddingBottom:'2rem'}}><h2 style={{fontSize:'24px', fontWeight:300, marginBottom:'0.5rem'}}>{project.description}</h2><div style={{width: '100%', height: '12px', background: '#e0e0e0', borderRadius: '6px', overflow: 'hidden', marginTop:'1rem'}}><div style={{width: `${percentage}%`, height: '100%', background: barColor, transition: 'width 0.5s ease'}}></div></div><div style={{display:'flex', justifyContent:'space-between', marginTop:'8px', fontSize:'12px', color:'#6f6f6f'}}><span>Utilização: {percentage}%</span><span>{project.used_hours.toFixed(1)}h / {project.total_budget_hours}h</span></div></div><div className="projects-table-wrapper" style={{maxHeight:'500px', overflowY:'auto', background:'#fff'}}><table className="projects-table" style={{fontSize:'13px'}}><thead style={{position:'sticky', top:0, zIndex:1, background:'#f4f4f4'}}><tr><th>Data</th><th>Profissional</th><th>Início</th><th>Fim</th><th>Relógio</th><th style={{color:'#0f62fe'}}>Rate</th><th>Horas</th><th>Atividade</th></tr></thead><tbody>{entries.map(entry => { const impliedRate = entry.manual_hours > 0 ? (entry.hours_billable / entry.manual_hours).toFixed(1) : "0.0"; return (<tr key={entry.ID}><td>{new Date(entry.date).toLocaleDateString()}</td><td style={{fontWeight:600}}>{entry.employee?.name || 'Tech'}</td><td>{entry.start_time}</td><td>{entry.end_time}</td><td style={{color:'#6f6f6f'}}>{(entry.calculated_duration || 0).toFixed(2)}h</td><td style={{fontWeight:'bold', color:'#0f62fe'}}>{impliedRate}x</td><td style={{fontWeight:'bold', fontSize:'14px', color:'#000'}}>{(entry.manual_hours || 0).toFixed(2)}h</td><td>{entry.description}</td></tr>) })}</tbody></table></div></div>)}
+const ProjectDetail = ({ project, entries, onBack }) => { 
+    if (!project) return <div>Carregando...</div>; 
+    const percentage = Math.min(((project.used_hours || 0) / (project.total_budget_hours || 1)) * 100, 100).toFixed(1); 
+    let barColor = percentage > 90 ? '#da1e28' : (percentage > 75 ? '#f1c21b' : '#0f62fe'); 
+    
+    const handleGenerateSpreadsheet = () => {
+        alert("Funcionalidade de Gerar Planilha em desenvolvimento");
+    }
+
+    return (
+        <div>
+            <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem'}}>
+                <button onClick={onBack} style={{background:'none', border:'none', color:'#0f62fe', cursor:'pointer', fontSize: '14px', fontWeight: 500}}>← Voltar</button>
+                <button onClick={handleGenerateSpreadsheet} className="submit-btn" style={{width: 'auto', padding: '0.5rem 1rem', borderRadius: '4px'}}>Gerar Planilha</button>
+            </div>
+            <div style={{marginBottom:'2rem', borderBottom:'1px solid #e0e0e0', paddingBottom:'2rem'}}><h2 style={{fontSize:'24px', fontWeight:300, marginBottom:'0.5rem'}}>{project.description}</h2><div style={{width: '100%', height: '12px', background: '#e0e0e0', borderRadius: '6px', overflow: 'hidden', marginTop:'1rem'}}><div style={{width: `${percentage}%`, height: '100%', background: barColor, transition: 'width 0.5s ease'}}></div></div><div style={{display:'flex', justifyContent:'space-between', marginTop:'8px', fontSize:'12px', color:'#6f6f6f'}}><span>Utilização: {percentage}%</span><span>{project.used_hours.toFixed(1)}h / {project.total_budget_hours}h</span></div></div><div className="projects-table-wrapper" style={{maxHeight:'500px', overflowY:'auto', background:'#fff'}}><table className="projects-table" style={{fontSize:'13px'}}><thead style={{position:'sticky', top:0, zIndex:1, background:'#f4f4f4'}}><tr><th>Data</th><th>Profissional</th><th>Início</th><th>Fim</th><th>Relógio</th><th style={{color:'#0f62fe'}}>Rate</th><th>Horas</th><th>Atividade</th></tr></thead><tbody>{entries.map(entry => { const impliedRate = entry.manual_hours > 0 ? (entry.hours_billable / entry.manual_hours).toFixed(1) : "0.0"; return (<tr key={entry.ID}><td>{new Date(entry.date).toLocaleDateString()}</td><td style={{fontWeight:600}}>{entry.employee?.name || 'Tech'}</td><td>{entry.start_time}</td><td>{entry.end_time}</td><td style={{color:'#6f6f6f'}}>{(entry.calculated_duration || 0).toFixed(2)}h</td><td style={{fontWeight:'bold', color:'#0f62fe'}}>{impliedRate}x</td><td style={{fontWeight:'bold', fontSize:'14px', color:'#000'}}>{(entry.manual_hours || 0).toFixed(2)}h</td><td>{entry.description}</td></tr>) })}</tbody></table></div></div>)}
 const PMLogs = ({ logs }) => (<div className="projects-table-wrapper"><table className="logs-table"><thead><tr><th>Data</th><th>Usuário</th><th>Ação</th></tr></thead><tbody>{logs.map((log, idx) => (<tr key={idx}><td>{log.timestamp}</td><td>{log.user_name}</td><td>{log.action}</td></tr>))}</tbody></table></div>)
 
 function App() {
@@ -257,12 +511,7 @@ function App() {
   const [projectEntries, setProjectEntries] = useState([])
   const [form, setForm] = useState({work_item_id: '', date: new Date().toISOString().split('T')[0], start_time: '09:00', end_time: '18:00', manual_hours: '', description: ''})
   
-  const [newProject, setNewProject] = useState({
-      contract_number: '', code: '', description: '', total_budget: '',
-      rate_business: '1.0', rate_evening: '1.5', rate_night: '2.0',
-      rate_sat_day: '1.5', rate_sat_night: '2.0', rate_sun_holiday: '2.5'
-  })
-  
+
   const [modalOpen, setModalOpen] = useState(false);
   const [modalAction, setModalAction] = useState(null);
   const [modalText, setModalText] = useState("");
@@ -274,7 +523,12 @@ function App() {
   const fetchData = async () => {
     try {
       const res = await axios.get(`${API_URL}/workitems`)
-      setWorkItems(res.data || [])
+      if (Array.isArray(res.data)) {
+        setWorkItems(res.data)
+      } else {
+        console.error("Invalid workitems response", res.data);
+        setWorkItems([])
+      }
       if (currentUser.role === 'PM') {
           const l = await axios.get(`${API_URL}/audit-logs`)
           setLogs(Array.isArray(l.data) ? l.data : [])
@@ -297,28 +551,6 @@ function App() {
     } catch (e) { setMessage({ type: 'error', text: e.response?.data?.error || "Erro ao salvar" }) }
   }
 
-  const handleCreateProject = async (e) => {
-    e.preventDefault()
-    try {
-        await axios.post(`${API_URL}/workitems`, {
-            ...newProject,
-            total_budget: parseNumber(newProject.total_budget),
-            rate_business: parseNumber(newProject.rate_business),
-            rate_evening: parseNumber(newProject.rate_evening),
-            rate_night: parseNumber(newProject.rate_night),
-            rate_sat_day: parseNumber(newProject.rate_sat_day),
-            rate_sat_night: parseNumber(newProject.rate_sat_night),
-            rate_sun_holiday: parseNumber(newProject.rate_sun_holiday),
-            manager_name: currentUser.name
-        })
-        setMessage({ type: 'success', text: 'Projeto Criado!' })
-        setNewProject({contract_number: '', code: '', description: '', total_budget: '', rate_business: '1.0', rate_evening: '1.5', rate_night: '2.0', rate_sat_day: '1.5', rate_sat_night: '2.0', rate_sun_holiday: '2.5'})
-        setPmView('dashboard')
-        fetchData()
-    } catch (e) { 
-        setMessage({ type: 'error', text: e.response?.data?.error || "Erro ao criar." }) 
-    }
-  }
 
   const handleEditProject = async (id, updatedData) => {
       try { await axios.put(`${API_URL}/workitems/${id}`, { description: updatedData.description, total_budget: parseFloat(updatedData.total_budget) }); setMessage({ type: 'success', text: 'Editado!' }); setPmView('dashboard'); fetchData() } catch (e) { setMessage({ type: 'error', text: "Erro." }) }
@@ -344,19 +576,19 @@ function App() {
                     <div className="projects-header"><h1>Gestão de Contratos</h1></div>
                     <div className="pm-tabs">
                         <button className={`pm-tab ${pmView === 'dashboard'||pmView ==='detail'?'active':''}`} onClick={() => setPmView('dashboard')}>Dashboard</button>
-                        <button className={`pm-tab ${pmView === 'create'?'active':''}`} onClick={() => setPmView('create')}>+ Criar Projeto</button>
                         <button className={`pm-tab ${pmView === 'logs'?'active':''}`} onClick={() => setPmView('logs')}>Logs</button>
                     </div>
                     {pmView === 'dashboard' && <PMDashboard workItems={workItems} onSelectProject={(wi) => { setSelectedProject(wi); setPmView('detail'); }} onEdit={(wi) => { setSelectedProject(wi); setPmView('edit'); }} onDelete={confirmDelete} />}
                     {pmView === 'detail' && <ProjectDetail project={workItems.find(w => w.ID === selectedProject?.ID) || selectedProject} entries={projectEntries} onBack={() => setPmView('dashboard')} />}
-                    {pmView === 'create' && <PMCreateProject newProject={newProject} setNewProject={setNewProject} onSubmit={handleCreateProject} />}
                     {pmView === 'edit' && selectedProject && <PMEditProject project={selectedProject} onCancel={() => setPmView('dashboard')} onSave={handleEditProject} />}
                     {pmView === 'logs' && <PMLogs logs={logs} />}
                 </>
             ) : (
                 <>
                     <div className="projects-header"><h1>Portal do Técnico</h1></div>
-                    <TechForm form={form} setForm={setForm} workItems={workItems} onSubmit={handleLaunchHours} />
+                    <ErrorBoundary>
+                        <TechWeeklyView currentUser={currentUser} workItems={workItems} />
+                    </ErrorBoundary>
                 </>
             )}
         </div>
