@@ -13,6 +13,7 @@ func Setup() *gin.Engine {
 	r.Use(cors.Default())
 
 	r.GET("/health", handlers.HealthCheck)
+	r.GET("/health/db", handlers.HealthDB)
 
 	// WorkItems routes
 	r.GET("/workitems", handlers.GetWorkItems)
